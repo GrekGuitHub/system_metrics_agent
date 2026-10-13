@@ -1,0 +1,49 @@
+# syntax=docker/dockerfile:1
+
+# Image de base : version de Python et de Debian fixées (jamais "latest").
+ARG PYTHON_IMAGE=python:3.12.15-slim-trixie
+
+# ---------- Étape 1 : builder ----------
+# Installe les dépendances dans un environnement virtuel isolé.
+FROM ${PYTHON_IMAGE} AS builder
+
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# requirements.txt est copié AVANT le code : tant qu'il ne change pas,
+# Docker réutilise cette couche en cache et ne réinstalle rien.
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# ---------- Étape 2 : image finale ----------
+FROM ${PYTHON_IMAGE} AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:$PATH"
+
+# Utilisateur système sans privilèges, sans shell de connexion ni home.
+RUN groupadd --system app \
+    && useradd --system --gid app --no-create-home --shell /usr/sbin/nologin app
+
+WORKDIR /app
+
+# On ne récupère du builder que l'environnement virtuel déjà prêt.
+COPY --from=builder /opt/venv /opt/venv
+# Le code reste la propriété de root : l'utilisateur "app" peut le lire
+# mais pas le modifier.
+COPY app/ ./app/
+
+USER app
+
+EXPOSE 8000
+
+# Pas de curl dans l'image slim : on interroge /health avec Python.
+HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 \
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+
+# Production : pas de --reload, écoute sur toutes les interfaces du conteneur.
+CMD ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8000"]

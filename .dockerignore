@@ -1,1 +1,34 @@
+# Historique Git et configuration CI : inutiles dans l'image
+.git
+.gitignore
+.gitattributes
+.github
+
+# Environnements virtuels locaux
+.venv
+venv
+
+# Secrets : ne doivent JAMAIS entrer dans une image
 .env
+*.env
+
+# Fichiers générés par Python et par les tests
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.scannerwork/
+
+# Tests : exécutés dans la CI, pas en production
+app/tests/
+requirements-dev.txt
+
+# Fichiers de build et de documentation
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+README.md
+sonar-project.properties

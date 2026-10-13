@@ -1,0 +1,27 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: metrics-api:local
+    ports:
+      - "${API_PORT:-8000}:8000"
+    restart: unless-stopped
+    # Le HEALTHCHECK est déjà défini dans Dockerfile.api :
+    # Compose s'en sert pour savoir quand l'API est "healthy".
+
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    image: metrics-agent:local
+    env_file:
+      - .env
+    environment:
+      # Prioritaire sur le .env : dans le réseau Compose, l'API se joint
+      # par son nom de service, pas par 127.0.0.1.
+      METRICS_ENDPOINT: http://api:8000/metrics
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

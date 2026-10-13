@@ -1,0 +1,44 @@
+# syntax=docker/dockerfile:1
+
+ARG PYTHON_IMAGE=python:3.12.15-slim-trixie
+
+# ---------- Étape 1 : builder ----------
+FROM ${PYTHON_IMAGE} AS builder
+
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# ---------- Étape 2 : image finale ----------
+FROM ${PYTHON_IMAGE} AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:$PATH"
+
+# Le collecteur exécute la commande "uptime", absente de l'image slim.
+# Sous Debian, elle est fournie par le paquet procps.
+# --no-install-recommends évite les paquets optionnels ; on vide ensuite
+# le cache apt pour ne pas alourdir la couche.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends procps \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd --system app \
+    && useradd --system --gid app --no-create-home --shell /usr/sbin/nologin app
+
+WORKDIR /app
+
+COPY --from=builder /opt/venv /opt/venv
+COPY app/ ./app/
+
+USER app
+
+# METRICS_ENDPOINT, COLLECTION_INTERVAL et REQUEST_TIMEOUT sont fournis
+# au lancement (docker run -e ... ou docker compose), jamais figés ici.
+CMD ["python", "-m", "app.agent"]

@@ -1,0 +1,2 @@
+# Fins de ligne Unix (LF) dans le dépôt, quel que soit l'OS du développeur.
+* text=auto eol=lf
