@@ -1,8 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Image de base : version de Python et de Debian fixées (jamais "latest").
-ARG PYTHON_IMAGE=python:3.12.0-slim-bookworm
-
+ARG PYTHON_IMAGE=python:3.12.15-slim-trixie
 
 # ---------- Étape 1 : builder ----------
 # Installe les dépendances dans un environnement virtuel isolé.
