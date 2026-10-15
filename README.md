@@ -8,7 +8,7 @@
 | Image agent | https://hub.docker.com/r/grekovdocker/system-metrics-agent |
 | Pipeline vert | `<lien vers l'exécution verte dans Actions>` |
 | Pipeline rouge (échec volontaire) | `<lien vers l'exécution rouge dans Actions>` |
-
+//commentaire
 ## Choix techniques
 
 - **Tests** : les tests sont dans `app/tests/`, pas dans `tests/` comme l'indiquait le README, et `test_api.py` n'existait pas. Les tests du collecteur échouaient sous Windows, car ils ne simulaient pas l'OS. Ils ont été corrigés, puis complétés (API, configuration, agent) : 20 tests, environ 83 % de couverture du code applicatif.
